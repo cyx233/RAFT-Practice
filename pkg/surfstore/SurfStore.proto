@@ -21,8 +21,7 @@ service MetaStore {
 
     rpc UpdateFile(FileMetaData) returns (Version) {}
 
-    rpc GetBlockStoreMap(BlockHashes) returns (BlockStoreMap) {}
-
+    rpc GetHashAddrMap(BlockHashes) returns (HashAddrMap) {}
     rpc GetBlockStoreAddrs(google.protobuf.Empty) returns (BlockStoreAddrs) {}
 }
 
@@ -31,7 +30,7 @@ service RaftSurfstore {
     rpc AppendEntries(AppendEntryInput) returns (AppendEntryOutput) {}
     rpc SetLeader(google.protobuf.Empty) returns (Success) {}
     rpc SendHeartbeat(google.protobuf.Empty) returns (Success) {}
-
+    
     // metastore
     rpc GetFileInfoMap(google.protobuf.Empty) returns (FileInfoMap) {}
     rpc UpdateFile(FileMetaData) returns (Version) {}
@@ -75,8 +74,8 @@ message Version {
     int32 version = 1;
 }
 
-message BlockStoreMap {
-    map<string, BlockHashes> blockStoreMap = 1;
+message HashAddrMap {
+    map<string, string> hashAddrMap = 1;
 }
 
 message BlockStoreAddrs {
