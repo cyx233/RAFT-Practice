@@ -34,7 +34,7 @@ service RaftSurfstore {
     // metastore
     rpc GetFileInfoMap(google.protobuf.Empty) returns (FileInfoMap) {}
     rpc UpdateFile(FileMetaData) returns (Version) {}
-    rpc GetBlockStoreMap(BlockHashes) returns (BlockStoreMap) {}
+    rpc GetHashAddrMap(BlockHashes) returns (HashAddrMap) {}
     rpc GetBlockStoreAddrs(google.protobuf.Empty) returns (BlockStoreAddrs) {}
    
     // testing interface

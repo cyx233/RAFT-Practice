@@ -72,5 +72,7 @@ func main() {
 	}
 
 	rpcClient := surfstore.NewSurfstoreRPCClient(addrs.RaftAddrs, baseDir, blockSize)
-	surfstore.ClientSync(rpcClient)
+	if err := surfstore.ClientSync(rpcClient); err != nil {
+		log.Fatal(err)
+	}
 }

@@ -4,21 +4,20 @@ import (
 	"bufio"
 	"errors"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 	"reflect"
 )
 
 // Implement the logic for a client syncing with the server here.
-func ClientSync(client RPCClient) {
+func ClientSync(client RPCClient) error {
 	//Read Meta Data
 	localIndex, err := LoadMetaFromMetaFile(client.BaseDir)
 	if err != nil {
 		if os.IsNotExist(err) {
 			WriteMetaFile(make(map[string]*FileMetaData), client.BaseDir)
 		} else {
-			log.Fatalf("Load Local Meta Error: " + err.Error())
+			return errors.New("Load Local Meta Error: " + err.Error())
 		}
 	}
 	// log.Println("Local before Sync: ", localIndex)
@@ -26,14 +25,14 @@ func ClientSync(client RPCClient) {
 	for {
 		//Pull before Push. Sync First Win.
 		if err := PullFromServer(client, localIndex); err != nil {
-			log.Fatalf("Pull From Server Error: " + err.Error())
+			return errors.New("Pull From Server Error: " + err.Error())
 		}
 		if err := PushToServer(client, localIndex); err != nil {
 			if err == OldVerError {
 				//Pull again
 				continue
 			} else {
-				log.Fatalf("Push To Server Error: " + err.Error())
+				return errors.New("Push To Server Error: " + err.Error())
 			}
 		}
 		break
@@ -42,8 +41,9 @@ func ClientSync(client RPCClient) {
 	// log.Println("Local after Sync: ", localIndex)
 	//Write Meta Data
 	if err := WriteMetaFile(localIndex, client.BaseDir); err != nil {
-		log.Fatalf("Write Local Meta Error: " + err.Error())
+		return errors.New("Write Local Meta Error: " + err.Error())
 	}
+	return nil
 }
 
 func GetChunkedFile(path string, blockSize int) ([]string, []*Block, error) {
