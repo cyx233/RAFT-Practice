@@ -1,7 +1,6 @@
 package SurfTest
 
 import (
-	"cse224/proj5/pkg/surfstore"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	"testing"
 )

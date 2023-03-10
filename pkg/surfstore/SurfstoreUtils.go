@@ -20,7 +20,8 @@ func ClientSync(client RPCClient) error {
 			return errors.New("Load Local Meta Error: " + err.Error())
 		}
 	}
-	// log.Println("Local before Sync: ", localIndex)
+	// log.Println("Local before Sync: ")
+	// PrintMetaMap(localIndex)
 
 	for {
 		//Pull before Push. Sync First Win.
@@ -38,7 +39,8 @@ func ClientSync(client RPCClient) error {
 		break
 	}
 
-	// log.Println("Local after Sync: ", localIndex)
+	// log.Println("Local after Sync: ")
+	// PrintMetaMap(localIndex)
 	//Write Meta Data
 	if err := WriteMetaFile(localIndex, client.BaseDir); err != nil {
 		return errors.New("Write Local Meta Error: " + err.Error())
@@ -107,7 +109,8 @@ func PullFromServer(client RPCClient, localIndex map[string]*FileMetaData) error
 	if err := client.GetFileInfoMap(&remoteIndex); err != nil {
 		return err
 	}
-	// log.Println("Remote before Sync: ", remoteIndex)
+	// log.Println("Remote before Sync: ")
+	// PrintMetaMap(remoteIndex)
 	for filename, remoteMeta := range remoteIndex {
 		if localIndex[filename].GetVersion() < remoteMeta.GetVersion() {
 			localIndex[filename] = &FileMetaData{
@@ -276,6 +279,7 @@ func PushToServer(client RPCClient, localIndex map[string]*FileMetaData) error {
 		}
 	}
 	// client.GetFileInfoMap(&remoteIndex)
-	// log.Println("Remote after Sync: ", remoteIndex)
+	// log.Println("Remote after Sync: ")
+	// PrintMetaMap(remoteIndex)
 	return nil
 }

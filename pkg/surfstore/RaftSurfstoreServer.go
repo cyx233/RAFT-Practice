@@ -148,7 +148,7 @@ func (s *RaftSurfstore) UpdateFile(ctx context.Context, filemeta *FileMetaData) 
 			return nil, err
 		}
 		s.commitIndex = int64(len(s.log)) - 1
-		go s.getResponse(ctx)
+		go s.getResponse(context.Background())
 		return s.runStateMachine(ctx)
 	}
 }
@@ -164,11 +164,9 @@ func (s *RaftSurfstore) AppendEntries(ctx context.Context, input *AppendEntryInp
 			Success:      false,
 			MatchedIndex: int64(len(s.log) - 1),
 		}
-		s.isCrashedMutex.RLock()
-		if s.isCrashed {
+		if s.checkIsCrash() {
 			return ans, ERR_SERVER_CRASHED
 		}
-		s.isCrashedMutex.RUnlock()
 		// 1. Reply false if term < currentTerm (§5.1)
 		if input.GetTerm() < s.term {
 			return ans, nil
@@ -181,7 +179,7 @@ func (s *RaftSurfstore) AppendEntries(ctx context.Context, input *AppendEntryInp
 		// 2. Reply false if log doesn’t contain an entry at prevLogIndex whose term
 		// matches prevLogTerm (§5.3)
 		prevLogIndex := input.GetPrevLogIndex()
-		if int64(len(s.log)) < prevLogIndex {
+		if prevLogIndex >= int64(len(s.log)) {
 			return ans, nil
 		}
 		// 3. If an existing entry conflicts with a new one (same index but different
@@ -261,24 +259,31 @@ func (s *RaftSurfstore) SendHeartbeat(ctx context.Context, _ *emptypb.Empty) (*S
 }
 
 func (s *RaftSurfstore) getResponse(ctx context.Context) error {
-	ch := make(chan error, len(s.raftAddrs)-1)
-	for i := range s.raftAddrs {
-		if int64(i) != s.id {
-			go s.replicateLogs(ctx, i, ch)
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	default:
+		child_ctx, cancel := context.WithTimeout(ctx, TIMEOUT)
+		defer cancel()
+		ch := make(chan error, len(s.raftAddrs)-1)
+		for i := range s.raftAddrs {
+			if int64(i) != s.id {
+				go s.replicateLogs(child_ctx, i, ch)
+			}
 		}
-	}
-	cnt := 1
-	for i := 0; i < len(s.raftAddrs)-1; i++ {
-		if err := <-ch; err == nil {
-			cnt += 1
-		} else if err == ERR_LARGER_TERM {
-			return ERR_LARGER_TERM
+		cnt := 1
+		for i := 0; i < len(s.raftAddrs)-1; i++ {
+			if err := <-ch; err == nil {
+				cnt += 1
+			} else if err == ERR_LARGER_TERM {
+				return ERR_LARGER_TERM
+			}
 		}
+		if cnt <= len(s.raftAddrs)/2 {
+			return errors.New(fmt.Sprintf("Only get %d response from %d servers", cnt, len(s.raftAddrs)))
+		}
+		return nil
 	}
-	if cnt <= len(s.raftAddrs)/2 {
-		return errors.New(fmt.Sprintf("Only get %d response", cnt))
-	}
-	return nil
 }
 
 func (s *RaftSurfstore) replicateLogs(ctx context.Context, id int, ch chan error) {
@@ -288,7 +293,7 @@ func (s *RaftSurfstore) replicateLogs(ctx context.Context, id int, ch chan error
 		return
 	default:
 		// connect to the server
-		conn, err := grpc.Dial(s.raftAddrs[id], grpc.WithInsecure())
+		conn, err := grpc.DialContext(ctx, s.raftAddrs[id], grpc.WithInsecure())
 		defer conn.Close()
 		if err != nil {
 			ch <- nil

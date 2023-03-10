@@ -2,9 +2,10 @@ package surfstore
 
 import (
 	context "context"
-	"errors"
 	"sync"
 
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -37,7 +38,7 @@ func (m *MetaStore) UpdateFile(ctx context.Context, fileMetaData *FileMetaData) 
 		return &Version{Version: -1}, ctx.Err()
 	default:
 		if fileMetaData == nil {
-			return &Version{Version: -1}, errors.New("fileMetaData == nil")
+			return &Version{Version: -1}, status.Error(codes.InvalidArgument, "fileMetaData == nil")
 		}
 		fname := fileMetaData.GetFilename()
 		m.mu.Lock()
@@ -51,7 +52,7 @@ func (m *MetaStore) UpdateFile(ctx context.Context, fileMetaData *FileMetaData) 
 			ver := &Version{Version: m.FileMetaMap[fname].GetVersion()}
 			return ver, nil
 		} else {
-			return &Version{Version: -1}, OldVerError
+			return &Version{Version: -1}, status.Error(codes.Aborted, OldVerError.Error())
 		}
 	}
 }
