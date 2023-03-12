@@ -205,11 +205,11 @@ func UploadIfModified(client RPCClient, localMeta *FileMetaData) error {
 		localMeta.BlockHashList = hashList
 	}
 	var latestVersion int32
+	localMeta.Version += 1
 	if err := client.UpdateFile(localMeta, &latestVersion); err != nil {
+		localMeta.Version -= 1
 		return err
 	}
-	localMeta.Version = latestVersion
-
 	return nil
 }
 
@@ -266,7 +266,7 @@ func PushToServer(client RPCClient, localIndex map[string]*FileMetaData) error {
 			} else {
 				deleteMeta := &FileMetaData{
 					Filename:      localMeta.Filename,
-					Version:       localMeta.Version,
+					Version:       localMeta.Version + 1,
 					BlockHashList: []string{TOMBSTONE_HASHVALUE},
 				}
 				var latestVersion int32

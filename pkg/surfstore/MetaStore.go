@@ -46,7 +46,7 @@ func (m *MetaStore) UpdateFile(ctx context.Context, fileMetaData *FileMetaData) 
 		if m.FileMetaMap[fname].GetVersion() <= fileMetaData.GetVersion() {
 			m.FileMetaMap[fname] = &FileMetaData{
 				Filename:      fileMetaData.GetFilename(),
-				Version:       fileMetaData.GetVersion() + 1,
+				Version:       fileMetaData.GetVersion(),
 				BlockHashList: fileMetaData.GetBlockHashList(),
 			}
 			ver := &Version{Version: m.FileMetaMap[fname].GetVersion()}
