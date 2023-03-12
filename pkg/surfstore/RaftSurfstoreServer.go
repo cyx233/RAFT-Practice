@@ -306,7 +306,7 @@ func (s *RaftSurfstore) replicateLogs(ctx context.Context, id int, ch chan error
 		conn, err := grpc.DialContext(ctx, s.raftAddrs[id], grpc.WithInsecure())
 		defer conn.Close()
 		if err != nil {
-			ch <- nil
+			ch <- err
 			return
 		}
 		c := NewRaftSurfstoreClient(conn)
