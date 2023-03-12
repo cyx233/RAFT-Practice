@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"time"
 
 	grpc "google.golang.org/grpc"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
@@ -82,8 +83,11 @@ func (s *RaftSurfstore) readPrep(ctx context.Context) error {
 		if !s.checkIsLeader() {
 			return ERR_NOT_LEADER
 		}
-		if err := s.getResponse(ctx); err != nil {
-			return err
+		for {
+			if err := s.getResponse(ctx); err == nil {
+				break
+			}
+			time.Sleep(time.Second)
 		}
 		if _, err := s.runStateMachine(ctx); err != nil {
 			return err
@@ -144,11 +148,17 @@ func (s *RaftSurfstore) UpdateFile(ctx context.Context, filemeta *FileMetaData) 
 			Term:         s.term,
 			FileMetaData: filemeta,
 		})
-		if err := s.getResponse(ctx); err != nil {
-			return nil, err
+		for {
+			if err := s.getResponse(ctx); err == nil {
+				break
+			}
 		}
 		s.commitIndex = int64(len(s.log)) - 1
-		go s.getResponse(context.Background())
+		for {
+			if err := s.getResponse(ctx); err == nil {
+				break
+			}
+		}
 		return s.runStateMachine(ctx)
 	}
 }
