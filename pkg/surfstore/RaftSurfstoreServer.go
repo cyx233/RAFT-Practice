@@ -203,6 +203,8 @@ func (s *RaftSurfstore) AppendEntries(ctx context.Context, input *AppendEntryInp
 				}
 				s.metaStore.mu.Unlock()
 			}
+			ans.MatchedIndex = prevLogIndex - 1
+			return ans, nil
 		}
 		// 4. Append any new entries not already in the log
 		s.log = append(s.log, input.GetEntries()...)
