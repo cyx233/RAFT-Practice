@@ -311,7 +311,7 @@ func (s *RaftSurfstore) replicateLogs(ctx context.Context, id int, ch chan error
 		}
 		c := NewRaftSurfstoreClient(conn)
 
-		for s.checkIsLeader() && !s.checkIsCrash() {
+		for s.checkIsLeader() && !s.checkIsCrash() && len(s.log) >= int(s.nextIndex[id]) {
 			input := &AppendEntryInput{
 				Term:         s.term,
 				PrevLogIndex: s.nextIndex[id] - 1,
