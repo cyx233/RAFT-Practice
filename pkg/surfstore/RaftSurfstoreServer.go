@@ -152,12 +152,14 @@ func (s *RaftSurfstore) UpdateFile(ctx context.Context, filemeta *FileMetaData) 
 			if err := s.getResponse(ctx); err == nil {
 				break
 			}
+			time.Sleep(time.Second)
 		}
 		s.commitIndex = int64(len(s.log)) - 1
 		for {
 			if err := s.getResponse(ctx); err == nil {
 				break
 			}
+			time.Sleep(time.Second)
 		}
 		return s.runStateMachine(ctx)
 	}
@@ -194,17 +196,16 @@ func (s *RaftSurfstore) AppendEntries(ctx context.Context, input *AppendEntryInp
 		}
 		// 3. If an existing entry conflicts with a new one (same index but different
 		// terms), delete the existing entry and all that follow it (§5.3)
+		s.log = s.log[:prevLogIndex+1]
 		if s.log[prevLogIndex].GetTerm() != input.GetPrevLogTerm() {
 			s.log = s.log[:prevLogIndex]
-			if s.lastApplied >= prevLogIndex {
-				s.metaStore.mu.Lock()
-				for k := range s.metaStore.FileMetaMap {
-					delete(s.metaStore.FileMetaMap, k)
-				}
-				s.metaStore.mu.Unlock()
+		}
+		if s.lastApplied >= int64(len(s.log)) {
+			s.metaStore.mu.Lock()
+			for k := range s.metaStore.FileMetaMap {
+				delete(s.metaStore.FileMetaMap, k)
 			}
-			ans.MatchedIndex = prevLogIndex - 1
-			return ans, nil
+			s.metaStore.mu.Unlock()
 		}
 		// 4. Append any new entries not already in the log
 		s.log = append(s.log, input.GetEntries()...)
