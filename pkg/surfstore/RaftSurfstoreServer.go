@@ -2,12 +2,12 @@ package surfstore
 
 import (
 	context "context"
-	"errors"
 	"fmt"
 	"sync"
 	"time"
 
 	grpc "google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -28,9 +28,6 @@ type RaftSurfstore struct {
 
 	metaStore *MetaStore
 
-	/*--------------- Chaos Monkey --------------*/
-	isCrashed      bool
-	isCrashedMutex *sync.RWMutex
 	UnimplementedRaftSurfstoreServer
 }
 
@@ -38,16 +35,6 @@ func (s *RaftSurfstore) checkIsLeader() bool {
 	s.isLeaderMutex.RLock()
 	defer s.isLeaderMutex.RUnlock()
 	if s.isLeader {
-		return true
-	} else {
-		return false
-	}
-}
-
-func (s *RaftSurfstore) checkIsCrash() bool {
-	s.isCrashedMutex.RLock()
-	defer s.isCrashedMutex.RUnlock()
-	if s.isCrashed {
 		return true
 	} else {
 		return false
@@ -77,9 +64,6 @@ func (s *RaftSurfstore) readPrep(ctx context.Context) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	default:
-		if s.checkIsCrash() {
-			return ERR_SERVER_CRASHED
-		}
 		if !s.checkIsLeader() {
 			return ERR_NOT_LEADER
 		}
@@ -137,9 +121,6 @@ func (s *RaftSurfstore) UpdateFile(ctx context.Context, filemeta *FileMetaData) 
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	default:
-		if s.checkIsCrash() {
-			return nil, ERR_SERVER_CRASHED
-		}
 		if !s.checkIsLeader() {
 			return nil, ERR_NOT_LEADER
 		}
@@ -175,9 +156,6 @@ func (s *RaftSurfstore) AppendEntries(ctx context.Context, input *AppendEntryInp
 			Term:         s.term,
 			Success:      false,
 			MatchedIndex: int64(len(s.log) - 1),
-		}
-		if s.checkIsCrash() {
-			return ans, ERR_SERVER_CRASHED
 		}
 		// 1. Reply false if term < currentTerm (§5.1)
 		if input.GetTerm() < s.term {
@@ -233,9 +211,6 @@ func (s *RaftSurfstore) SetLeader(ctx context.Context, _ *emptypb.Empty) (*Succe
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	default:
-		if s.checkIsCrash() {
-			return &Success{Flag: false}, ERR_SERVER_CRASHED
-		}
 		if s.checkIsLeader() {
 			return &Success{Flag: true}, nil
 		}
@@ -257,10 +232,6 @@ func (s *RaftSurfstore) SendHeartbeat(ctx context.Context, _ *emptypb.Empty) (*S
 	case <-ctx.Done():
 		return nil, ctx.Err()
 	default:
-		if s.checkIsCrash() {
-			return &Success{Flag: false}, ERR_SERVER_CRASHED
-		}
-
 		if !s.checkIsLeader() {
 			return &Success{Flag: false}, ERR_NOT_LEADER
 		}
@@ -293,7 +264,7 @@ func (s *RaftSurfstore) getResponse(ctx context.Context) error {
 			}
 		}
 		if cnt <= len(s.raftAddrs)/2 {
-			return errors.New(fmt.Sprintf("Only get %d response from %d servers", cnt, len(s.raftAddrs)))
+			return fmt.Errorf("only get %d response from %d servers", cnt, len(s.raftAddrs))
 		}
 		return nil
 	}
@@ -306,7 +277,7 @@ func (s *RaftSurfstore) replicateLogs(ctx context.Context, id int, ch chan error
 		return
 	default:
 		// connect to the server
-		conn, err := grpc.DialContext(ctx, s.raftAddrs[id], grpc.WithInsecure())
+		conn, err := grpc.DialContext(ctx, s.raftAddrs[id], grpc.WithTransportCredentials(insecure.NewCredentials()))
 		defer conn.Close()
 		if err != nil {
 			ch <- err
@@ -314,7 +285,7 @@ func (s *RaftSurfstore) replicateLogs(ctx context.Context, id int, ch chan error
 		}
 		c := NewRaftSurfstoreClient(conn)
 
-		for s.checkIsLeader() && !s.checkIsCrash() && len(s.log) >= int(s.nextIndex[id]) {
+		for s.checkIsLeader() && len(s.log) >= int(s.nextIndex[id]) {
 			input := &AppendEntryInput{
 				Term:         s.term,
 				PrevLogIndex: s.nextIndex[id] - 1,
@@ -345,24 +316,6 @@ func (s *RaftSurfstore) replicateLogs(ctx context.Context, id int, ch chan error
 			}
 		}
 	}
-}
-
-// ========== DO NOT MODIFY BELOW THIS LINE =====================================
-
-func (s *RaftSurfstore) Crash(ctx context.Context, _ *emptypb.Empty) (*Success, error) {
-	s.isCrashedMutex.Lock()
-	s.isCrashed = true
-	s.isCrashedMutex.Unlock()
-
-	return &Success{Flag: true}, nil
-}
-
-func (s *RaftSurfstore) Restore(ctx context.Context, _ *emptypb.Empty) (*Success, error) {
-	s.isCrashedMutex.Lock()
-	s.isCrashed = false
-	s.isCrashedMutex.Unlock()
-
-	return &Success{Flag: true}, nil
 }
 
 func (s *RaftSurfstore) GetInternalState(ctx context.Context, empty *emptypb.Empty) (*RaftInternalState, error) {

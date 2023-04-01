@@ -52,7 +52,7 @@ func (m *MetaStore) UpdateFile(ctx context.Context, fileMetaData *FileMetaData) 
 			ver := &Version{Version: m.FileMetaMap[fname].GetVersion()}
 			return ver, nil
 		} else {
-			return &Version{Version: -1}, status.Error(codes.Aborted, OldVerError.Error())
+			return &Version{Version: -1}, status.Error(codes.Aborted, ErrOldVer.Error())
 		}
 	}
 }

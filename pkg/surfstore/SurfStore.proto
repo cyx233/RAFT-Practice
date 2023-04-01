@@ -39,8 +39,6 @@ service RaftSurfstore {
    
     // testing interface
     rpc GetInternalState(google.protobuf.Empty) returns (RaftInternalState) {}
-    rpc Restore(google.protobuf.Empty) returns (Success) {}
-    rpc Crash(google.protobuf.Empty) returns (Success) {}
 }
 
 message BlockHash {
@@ -80,10 +78,6 @@ message HashAddrMap {
 
 message BlockStoreAddrs {
     repeated string blockStoreAddrs = 1;
-}
-
-message CrashedState {
-    bool isCrashed = 1;
 }
 
 message AppendEntryInput {

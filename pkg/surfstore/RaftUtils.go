@@ -40,20 +40,17 @@ func NewRaftServer(id int64, config RaftConfig) (*RaftSurfstore, error) {
 	// TODO Any initialization you need here
 
 	isLeaderMutex := sync.RWMutex{}
-	isCrashedMutex := sync.RWMutex{}
 
 	server := RaftSurfstore{
-		isLeader:       false,
-		isLeaderMutex:  &isLeaderMutex,
-		term:           0,
-		metaStore:      NewMetaStore(config.BlockAddrs),
-		log:            []*UpdateOperation{{Term: 0, FileMetaData: nil}},
-		isCrashed:      false,
-		isCrashedMutex: &isCrashedMutex,
-		id:             id,
-		raftAddrs:      config.RaftAddrs,
-		commitIndex:    0,
-		lastApplied:    0,
+		isLeader:      false,
+		isLeaderMutex: &isLeaderMutex,
+		term:          0,
+		metaStore:     NewMetaStore(config.BlockAddrs),
+		log:           []*UpdateOperation{{Term: 0, FileMetaData: nil}},
+		id:            id,
+		raftAddrs:     config.RaftAddrs,
+		commitIndex:   0,
+		lastApplied:   0,
 	}
 
 	return &server, nil

@@ -13,8 +13,6 @@ type RaftInterface interface {
 
 type RaftTestingInterface interface {
 	GetInternalState(ctx context.Context, _ *emptypb.Empty) (*RaftInternalState, error)
-	Crash(ctx context.Context, _ *emptypb.Empty) (*Success, error)
-	Restore(ctx context.Context, _ *emptypb.Empty) (*Success, error)
 }
 
 type RaftSurfstoreInterface interface {

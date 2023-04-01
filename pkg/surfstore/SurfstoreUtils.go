@@ -29,7 +29,7 @@ func ClientSync(client RPCClient) error {
 			return errors.New("Pull From Server Error: " + err.Error())
 		}
 		if err := PushToServer(client, localIndex); err != nil {
-			if err == OldVerError {
+			if err == ErrOldVer {
 				//Pull again
 				continue
 			} else {
@@ -152,9 +152,8 @@ func UploadBlock(client RPCClient, block *Block, blockStoreAddr string) error {
 	if succ {
 		return nil
 	} else {
-		return errors.New("Upload Block Error")
+		return errors.New("upload block error")
 	}
-
 }
 
 func UploadIfModified(client RPCClient, localMeta *FileMetaData) error {
@@ -245,7 +244,7 @@ func PushToServer(client RPCClient, localIndex map[string]*FileMetaData) error {
 			return err
 		}
 		if localMeta.GetVersion() < remoteIndex[info.Name()].GetVersion() {
-			return OldVerError
+			return ErrOldVer
 		}
 		if err := UploadIfModified(client, localMeta); err != nil {
 			return err
@@ -262,7 +261,7 @@ func PushToServer(client RPCClient, localIndex map[string]*FileMetaData) error {
 				return err
 			}
 			if localMeta.GetVersion() < remoteIndex[fname].GetVersion() {
-				return OldVerError
+				return ErrOldVer
 			} else {
 				deleteMeta := &FileMetaData{
 					Filename:      localMeta.Filename,

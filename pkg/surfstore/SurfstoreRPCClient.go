@@ -6,6 +6,7 @@ import (
 
 	grpc "google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
@@ -21,7 +22,7 @@ func (surfClient *RPCClient) GetBlock(blockHash string, blockStoreAddr string, b
 		return errors.New("block == nil")
 	}
 	// connect to the server
-	conn, err := grpc.Dial(blockStoreAddr, grpc.WithInsecure())
+	conn, err := grpc.Dial(blockStoreAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
@@ -47,7 +48,7 @@ func (surfClient *RPCClient) PutBlock(block *Block, blockStoreAddr string, succ 
 		return errors.New("succ == nil")
 	}
 	// connect to the server
-	conn, err := grpc.Dial(blockStoreAddr, grpc.WithInsecure())
+	conn, err := grpc.Dial(blockStoreAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
@@ -71,7 +72,7 @@ func (surfClient *RPCClient) HasBlocks(blockHashesIn []string, blockStoreAddr st
 		return errors.New("blockHashesOut == nil")
 	}
 	// connect to the server
-	conn, err := grpc.Dial(blockStoreAddr, grpc.WithInsecure())
+	conn, err := grpc.Dial(blockStoreAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
@@ -95,7 +96,7 @@ func (surfClient *RPCClient) GetBlockHashes(blockStoreAddr string, blockHashes *
 		return errors.New("blockHashesOut == nil")
 	}
 	// connect to the server
-	conn, err := grpc.Dial(blockStoreAddr, grpc.WithInsecure())
+	conn, err := grpc.Dial(blockStoreAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
@@ -120,7 +121,7 @@ func (surfClient *RPCClient) GetFileInfoMap(serverFileInfoMap *map[string]*FileM
 	}
 	// connect to the server
 	for i := 0; i < len(surfClient.RaftAddrs); i++ {
-		conn, err := grpc.Dial(surfClient.RaftAddrs[i], grpc.WithInsecure())
+		conn, err := grpc.Dial(surfClient.RaftAddrs[i], grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return err
 		}
@@ -143,7 +144,7 @@ func (surfClient *RPCClient) GetFileInfoMap(serverFileInfoMap *map[string]*FileM
 		cancel()
 		return conn.Close()
 	}
-	return ERR_LEADER_NOT_FOUND
+	return ErrLeaderNotFound
 }
 
 func (surfClient *RPCClient) UpdateFile(fileMetaData *FileMetaData, latestVersion *int32) error {
@@ -152,7 +153,7 @@ func (surfClient *RPCClient) UpdateFile(fileMetaData *FileMetaData, latestVersio
 	}
 	for i := 0; i < len(surfClient.RaftAddrs); i++ {
 		// connect to the server
-		conn, err := grpc.Dial(surfClient.RaftAddrs[i], grpc.WithInsecure())
+		conn, err := grpc.Dial(surfClient.RaftAddrs[i], grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return err
 		}
@@ -175,7 +176,7 @@ func (surfClient *RPCClient) UpdateFile(fileMetaData *FileMetaData, latestVersio
 		cancel()
 		return conn.Close()
 	}
-	return ERR_LEADER_NOT_FOUND
+	return ErrLeaderNotFound
 }
 
 func (surfClient *RPCClient) GetBlockStoreAddrs(blockStoreAddr *[]string) error {
@@ -184,7 +185,7 @@ func (surfClient *RPCClient) GetBlockStoreAddrs(blockStoreAddr *[]string) error 
 	}
 	for i := 0; i < len(surfClient.RaftAddrs); i++ {
 		// connect to the server
-		conn, err := grpc.Dial(surfClient.RaftAddrs[i], grpc.WithInsecure())
+		conn, err := grpc.Dial(surfClient.RaftAddrs[i], grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return err
 		}
@@ -208,7 +209,7 @@ func (surfClient *RPCClient) GetBlockStoreAddrs(blockStoreAddr *[]string) error 
 		cancel()
 		conn.Close()
 	}
-	return ERR_LEADER_NOT_FOUND
+	return ErrLeaderNotFound
 }
 
 func (surfClient *RPCClient) GetHashAddrMap(blockHashesIn []string, hashAddrMap *map[string]string) error {
@@ -217,7 +218,7 @@ func (surfClient *RPCClient) GetHashAddrMap(blockHashesIn []string, hashAddrMap 
 	}
 	for i := 0; i < len(surfClient.RaftAddrs); i++ {
 		// connect to the server
-		conn, err := grpc.Dial(surfClient.RaftAddrs[i], grpc.WithInsecure())
+		conn, err := grpc.Dial(surfClient.RaftAddrs[i], grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			return err
 		}
@@ -241,7 +242,7 @@ func (surfClient *RPCClient) GetHashAddrMap(blockHashesIn []string, hashAddrMap 
 		cancel()
 		return conn.Close()
 	}
-	return ERR_LEADER_NOT_FOUND
+	return ErrLeaderNotFound
 }
 
 // This line guarantees all method for RPCClient are implemented
@@ -249,7 +250,6 @@ var _ ClientInterface = new(RPCClient)
 
 // Create an Surfstore RPC client
 func NewSurfstoreRPCClient(RaftAddrs []string, baseDir string, blockSize int) RPCClient {
-
 	return RPCClient{
 		RaftAddrs: RaftAddrs,
 		BaseDir:   baseDir,

@@ -17,6 +17,6 @@ const HASH_LIST_INDEX int = 2
 const CONFIG_DELIMITER string = ","
 const HASH_DELIMITER string = " "
 
-var OldVerError error = errors.New("Loacl Version < Server Version. Pull From Server")
+var ErrOldVer error = errors.New("loacl version < server version. pull from server")
 var TIMEOUT = time.Second * 5
 var HEARTBEAT_TIMEOUT = time.Millisecond * 500
