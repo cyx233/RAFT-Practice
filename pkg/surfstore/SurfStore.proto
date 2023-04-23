@@ -28,7 +28,6 @@ service MetaStore {
 service RaftSurfstore {
     // raft
     rpc AppendEntries(AppendEntryInput) returns (AppendEntryOutput) {}
-    rpc SetLeader(google.protobuf.Empty) returns (Success) {}
     rpc SendHeartbeat(google.protobuf.Empty) returns (Success) {}
     
     // metastore
@@ -95,13 +94,26 @@ message AppendEntryOutput {
     int64 matchedIndex = 4;
 }
 
+message RequestVoteInput {
+    int64 term = 1;
+    int64 candidateId = 2;
+    int64 lastLogIndex = 3;
+    int64 lastLogTerm = 4;
+}
+
+message RequestVoteOutput {
+    int64 serverId = 1;
+    int64 term = 2;
+    bool voteGranted = 3;
+}
+
 message UpdateOperation {
     int64 term = 1;
     FileMetaData fileMetaData = 3;
 }
 
 message RaftInternalState {
-    bool isLeader = 1;
+    int64 state = 1;
     int64 term = 2;
     repeated UpdateOperation log = 3;
     FileInfoMap metaMap = 4;

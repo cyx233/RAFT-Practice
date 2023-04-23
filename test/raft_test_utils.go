@@ -4,14 +4,15 @@ import (
 	context "context"
 	"cse224/proj5/pkg/surfstore"
 	"fmt"
-	"google.golang.org/grpc"
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	"log"
 	"os"
 	"os/exec"
 	"strconv"
 	"strings"
 	"time"
+
+	"google.golang.org/grpc"
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 type TestInfo struct {
@@ -93,7 +94,7 @@ func InitBlockStores(blockStoreAddrs []string) []*exec.Cmd {
 
 func InitRaftServers(cfgPath string, cfg surfstore.RaftConfig) []*exec.Cmd {
 	cmdList := make([]*exec.Cmd, 0)
-	for idx, _ := range cfg.RaftAddrs {
+	for idx := range cfg.RaftAddrs {
 
 		cmd := exec.Command("_bin/SurfstoreRaftServerExec", "-f", cfgPath, "-i", strconv.Itoa(idx))
 		cmd.Stderr = os.Stderr
@@ -113,7 +114,7 @@ func InitRaftServers(cfgPath string, cfg surfstore.RaftConfig) []*exec.Cmd {
 	return cmdList
 }
 
-func CheckInternalState(isLeader *bool, term *int64, log []*surfstore.UpdateOperation, fileMetaMap map[string]*surfstore.FileMetaData, server surfstore.RaftSurfstoreClient, ctx context.Context) (bool, error) {
+func CheckInternalState(raft_state *int64, term *int64, log []*surfstore.UpdateOperation, fileMetaMap map[string]*surfstore.FileMetaData, server surfstore.RaftSurfstoreClient, ctx context.Context) (bool, error) {
 	state, err := server.GetInternalState(ctx, &emptypb.Empty{})
 	if err != nil {
 		return false, fmt.Errorf("could not get internal state: %w", err)
@@ -121,8 +122,8 @@ func CheckInternalState(isLeader *bool, term *int64, log []*surfstore.UpdateOper
 	if state == nil {
 		return false, fmt.Errorf("state is nil")
 	}
-	if isLeader != nil && *isLeader != state.IsLeader {
-		return false, fmt.Errorf("expected leader state %t, got %t", *isLeader, state.IsLeader)
+	if raft_state != nil && *raft_state != state.GetState() {
+		return false, fmt.Errorf("expected leader state %d, got %d", *raft_state, state.GetState())
 	}
 	if term != nil && *term != state.Term {
 		return false, fmt.Errorf("expected term %d, got %d", *term, state.Term)

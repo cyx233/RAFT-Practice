@@ -1,8 +1,9 @@
 package SurfTest
 
 import (
-	emptypb "google.golang.org/protobuf/types/known/emptypb"
 	"testing"
+
+	emptypb "google.golang.org/protobuf/types/known/emptypb"
 )
 
 func TestRaftSetLeader(t *testing.T) {
@@ -13,7 +14,6 @@ func TestRaftSetLeader(t *testing.T) {
 
 	// TEST
 	leaderIdx := 0
-	test.Clients[leaderIdx].SetLeader(test.Context, &emptypb.Empty{})
 
 	// heartbeat
 	for _, server := range test.Clients {
@@ -31,19 +31,18 @@ func TestRaftSetLeader(t *testing.T) {
 		}
 		if idx == leaderIdx {
 			// server should be the leader
-			if !state.IsLeader {
+			if !(state.GetState() == 0) {
 				t.Fatalf("Server %d should be the leader", idx)
 			}
 		} else {
 			// server should not be the leader
-			if state.IsLeader {
+			if state.GetState() == 0 {
 				t.Fatalf("Server %d should not be the leader", idx)
 			}
 		}
 	}
 
 	leaderIdx = 2
-	test.Clients[leaderIdx].SetLeader(test.Context, &emptypb.Empty{})
 
 	// heartbeat
 	for _, server := range test.Clients {
@@ -61,12 +60,12 @@ func TestRaftSetLeader(t *testing.T) {
 		}
 		if idx == leaderIdx {
 			// server should be the leader
-			if !state.IsLeader {
+			if !(state.GetState() == 0) {
 				t.Fatalf("Server %d should be the leader", idx)
 			}
 		} else {
 			// server should not be the leader
-			if state.IsLeader {
+			if state.GetState() == 0 {
 				t.Fatalf("Server %d should not be the leader", idx)
 			}
 		}

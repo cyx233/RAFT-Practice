@@ -2,6 +2,7 @@ package surfstore
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -11,6 +12,7 @@ import (
 	"sync"
 
 	grpc "google.golang.org/grpc"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type RaftConfig struct {
@@ -42,7 +44,7 @@ func NewRaftServer(id int64, config RaftConfig) (*RaftSurfstore, error) {
 	isLeaderMutex := sync.RWMutex{}
 
 	server := RaftSurfstore{
-		isLeader:      false,
+		state:         Follower,
 		isLeaderMutex: &isLeaderMutex,
 		term:          0,
 		metaStore:     NewMetaStore(config.BlockAddrs),
@@ -52,6 +54,7 @@ func NewRaftServer(id int64, config RaftConfig) (*RaftSurfstore, error) {
 		commitIndex:   0,
 		lastApplied:   0,
 	}
+	go server.run(context.Background(), &emptypb.Empty{})
 
 	return &server, nil
 }
